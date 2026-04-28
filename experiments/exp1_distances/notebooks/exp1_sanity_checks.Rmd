@@ -1,0 +1,180 @@
+---
+title: "Exp 1 — Sanity Checks: Statistical Distance Functions"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "#>")
+source("../R/distances.R")
+dir.create("../results/tables",  recursive = TRUE, showWarnings = FALSE)
+dir.create("../results/figures", recursive = TRUE, showWarnings = FALSE)
+```
+
+Verifies that all three distance functions satisfy the sanity checks from the
+experiment specification before they are used in clustering (exp2–exp6).
+
+---
+
+## 1  Fisher-Rao Univariate
+
+### Identity and key value
+
+```{r fr_uni_identity}
+d_same       <- fisher_rao_univariate(0, 1, 0, 1)
+d_0102       <- fisher_rao_univariate(0, 1, 0, 2)
+expected_val <- sqrt(2) * log(2)          # ≈ 0.9803  (same-mean special case)
+
+cat("d_F( (0,1), (0,1) ) =", d_same, "       [expected: 0]\n")
+cat("d_F( (0,1), (0,2) ) =", round(d_0102, 6),
+    "  [expected:", round(expected_val, 6), "]\n")
+```
+
+### Symmetry
+
+```{r fr_uni_symmetry}
+d_2010 <- fisher_rao_univariate(0, 2, 0, 1)
+cat("d_F( (0,1),(0,2) ) == d_F( (0,2),(0,1) ):",
+    isTRUE(all.equal(d_0102, d_2010)), "\n")
+```
+
+### Distances increase as distributions diverge
+
+```{r fr_uni_monotone}
+sigmas <- c(1, 2, 5, 10, 50, 100)
+dists  <- sapply(sigmas, function(s) fisher_rao_univariate(0, 1, 0, s))
+
+df_inc <- data.frame(sigma2 = sigmas, d_F = round(dists, 6))
+knitr::kable(df_inc, caption = "d_F( (0,1), (0, sigma2) ) — should increase with sigma2")
+
+cat("Monotone increasing:", all(diff(dists) > 0), "\n")
+```
+
+### sigma → 0 implies d_F → ∞
+
+```{r fr_uni_sigma0}
+tiny <- c(1, 0.1, 0.01, 0.001, 0.0001)
+dists_small <- sapply(tiny, function(s) fisher_rao_univariate(0, s, 0, 1))
+
+df_small <- data.frame(sigma1 = tiny, d_F = round(dists_small, 3))
+knitr::kable(df_small, caption = "d_F( (0, sigma1), (0,1) ) — should grow as sigma1 → 0")
+
+# tiny is decreasing (1 → 0.0001), so distances should be increasing
+cat("Grows as sigma → 0:", all(diff(dists_small) > 0), "\n")
+```
+
+### Visualisation: distance surface
+
+```{r fr_uni_surface, fig.cap="Fisher-Rao distance d_F((0,1),(mu2,sigma2)) on the parameter plane"}
+library(ggplot2)
+
+grid <- expand.grid(
+  mu2    = seq(-3, 3, length.out = 60),
+  sigma2 = seq(0.2, 4, length.out = 60)
+)
+grid$d_F <- mapply(fisher_rao_univariate, 0, 1, grid$mu2, grid$sigma2)
+
+p <- ggplot(grid, aes(x = mu2, y = sigma2, fill = d_F)) +
+  geom_tile() +
+  scale_fill_viridis_c(name = expression(d[F]), option = "C") +
+  geom_point(aes(x = 0, y = 1), colour = "white", size = 3,
+             inherit.aes = FALSE) +
+  labs(title = "Fisher-Rao distance from (0, 1)",
+       x = expression(mu[2]), y = expression(sigma[2])) +
+  theme_minimal()
+
+print(p)
+ggsave("../results/figures/fr_univariate_surface.png", p,
+       width = 6, height = 4, dpi = 150)
+```
+
+---
+
+## 2  Fisher-Rao Bivariate
+
+```{r fr_biv_checks}
+# Identity
+d_biv_same <- fisher_rao_bivariate(0, c(1, 2), 0, c(1, 2))
+
+# Symmetry
+d_biv_12 <- fisher_rao_bivariate(0, c(1, 1), 0, c(2, 2))
+d_biv_21 <- fisher_rao_bivariate(0, c(2, 2), 0, c(1, 1))
+
+# Consistency with univariate: when sigma1 = sigma2 per dim, should equal
+# sqrt(2) * sum of squared univariate log-ratios  (same-mean case)
+#   d_biv((0,(s,s)),(0,(2s,2s))) = sqrt(2*(ln2)^2 + 2*(ln2)^2) = 2*ln(2)
+d_biv_expected <- 2 * log(2)
+
+cat("d_F_biv( same )          =", d_biv_same,
+    "        [expected: 0]\n")
+cat("d_F_biv( (0,c(1,1)), (0,c(2,2)) ) =", round(d_biv_12, 6),
+    "  [expected:", round(d_biv_expected, 6), "]\n")
+cat("Symmetric:               ", isTRUE(all.equal(d_biv_12, d_biv_21)), "\n")
+```
+
+---
+
+## 3  Hellinger Discrete
+
+```{r hellinger_checks}
+p <- c(0.1, 0.4, 0.3, 0.2)
+q <- c(0.2, 0.3, 0.3, 0.2)
+
+d_same_h <- hellinger_discrete(p, p)
+d_pq     <- hellinger_discrete(p, q)
+d_qp     <- hellinger_discrete(q, p)
+
+# Disjoint supports → maximum distance = 1
+p_disj <- c(1, 0, 0, 0)
+q_disj <- c(0, 1, 0, 0)
+d_max  <- hellinger_discrete(p_disj, q_disj)
+
+cat("d_H( p, p ) =", d_same_h, "  [expected: 0]\n")
+cat("d_H( p, q ) =", round(d_pq, 6), "\n")
+cat("Symmetric:   ", isTRUE(all.equal(d_pq, d_qp)), "\n")
+cat("d_H( disjoint supports ) =", d_max, "  [expected: 1]\n")
+```
+
+---
+
+## 4  Summary
+
+```{r summary_table, results="asis"}
+checks <- data.frame(
+  Check = c(
+    "FR univariate — d(P,P) = 0",
+    "FR univariate — d((0,1),(0,2)) ≈ 0.9803",
+    "FR univariate — symmetric",
+    "FR univariate — increases with divergence",
+    "FR univariate — d → ∞ as sigma → 0",
+    "FR bivariate  — d(P,P) = 0",
+    "FR bivariate  — d((0,c(1,1)),(0,c(2,2))) ≈ 2*ln2",
+    "FR bivariate  — symmetric",
+    "Hellinger     — d(p,p) = 0",
+    "Hellinger     — symmetric",
+    "Hellinger     — max dist = 1 (disjoint support)"
+  ),
+  Result = c(
+    isTRUE(all.equal(d_same, 0)),
+    isTRUE(all.equal(d_0102, expected_val, tolerance = 1e-6)),
+    isTRUE(all.equal(d_0102, d_2010)),
+    all(diff(dists) > 0),
+    all(diff(dists_small) > 0),    # tiny is decreasing, so distances must increase
+    isTRUE(all.equal(d_biv_same, 0)),
+    isTRUE(all.equal(d_biv_12, d_biv_expected, tolerance = 1e-6)),
+    isTRUE(all.equal(d_biv_12, d_biv_21)),
+    isTRUE(all.equal(d_same_h, 0)),
+    isTRUE(all.equal(d_pq, d_qp)),
+    isTRUE(all.equal(d_max, 1))
+  )
+)
+checks$Result <- ifelse(checks$Result, "PASS", "FAIL")
+
+knitr::kable(checks, align = c("l", "c"), caption = "Sanity check results")
+
+write.csv(checks, "../results/tables/sanity_checks.csv", row.names = FALSE)
+cat("\nAll checks passed:", all(checks$Result == "PASS"), "\n")
+```
