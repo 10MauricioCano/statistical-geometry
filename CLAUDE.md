@@ -157,13 +157,15 @@ Required sanity checks:
 - k=2, t=100 distributions/cluster, n=30 samples/distribution, 100 replications
 - True params: (μ1,σ1)=(1,1.5) and (μ2,σ2)=(2,1.5)
 
-**Expected accuracy**:
-| Algorithm | Accuracy |
-|-----------|----------|
-| Hierarchical + Fisher-Rao | 0.904 ± 0.006 |
-| Hierarchical + Euclidean  | 0.922 ± 0.006 |
-| K-Means + Fisher-Rao      | 0.965 ± 0.001 |
-| K-Means + Euclidean       | 0.965 ± 0.010 |
+**Accuracy (Zhang Table 8.1 vs replicated, seed=42, 100 reps)**:
+| Algorithm | Zhang (2017) | Replicated |
+|-----------|--------------|------------|
+| K-Means + Fisher-Rao      | 0.965 ± 0.001 | 0.966 ± 0.001 |
+| K-Means + Euclidean       | 0.965 ± 0.010 | 0.966 ± 0.001 |
+| Hierarchical + Fisher-Rao | 0.904 ± 0.006 | 0.916 ± 0.006 |
+| Hierarchical + Euclidean  | 0.922 ± 0.006 | 0.916 ± 0.007 |
+
+K-Means values match exactly. Hierarchical is ~1% higher with FR/Euclidean ordering swapped — consistent with Monte Carlo variance and possibly a different linkage method in the original (we use `complete`).
 
 ---
 
