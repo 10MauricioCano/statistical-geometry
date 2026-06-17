@@ -1,0 +1,104 @@
+---
+title: "Exp 4 — Clustering Bivariate Gaussians, k=3"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "#>")
+set.seed(42)
+source("../../exp1_distances/R/distances.R")
+source("../R/data_generation_bivariate.R")
+source("../R/clustering_bivariate.R")
+dir.create("../results/tables",  recursive = TRUE, showWarnings = FALSE)
+dir.create("../results/figures", recursive = TRUE, showWarnings = FALSE)
+```
+
+Replicates Zhang (2017) Table 8.3: K-Means and hierarchical clustering on
+bivariate Gaussian parameter estimates, comparing bivariate Fisher-Rao
+(eq. 8.2) vs Euclidean distance in 3D parameter space (μ, σ₁, σ₂).
+Each algorithm is evaluated over 100 Monte Carlo replications.
+
+---
+
+## Parameters (Zhang Section 8.3)
+
+```{r params}
+mu_list    <- list(1.0, 1.5, 2.0)
+sigma_list <- list(c(1.0, 2.0), c(1.5, 2.5), c(2.0, 3.0))
+k     <- 3L
+t     <- 100L   # distributions per cluster
+n     <- 30L    # samples per distribution
+n_rep <- 100L   # Monte Carlo replications
+```
+
+True cluster parameters:
+$(\mu, \sigma_1, \sigma_2) = (1, 1, 2),\; (1.5, 1.5, 2.5),\; (2, 2, 3)$.
+Covariance is diagonal: $\Sigma_k = \mathrm{diag}(\sigma_{1k}^2, \sigma_{2k}^2)$
+with the same $\mu_k$ for both dimensions.
+Each replication generates $k \times t = 300$ estimated parameter triples.
+
+---
+
+## Monte Carlo replications
+
+```{r run, cache=TRUE}
+results <- run_replications(
+  mu_list, sigma_list,
+  k = k, t = t, n = n, n_rep = n_rep
+)
+```
+
+---
+
+## Accuracy table
+
+```{r summary}
+algorithms <- c(
+  "K-Means + Fisher-Rao",
+  "K-Means + Euclidean",
+  "Hierarchical + Fisher-Rao",
+  "Hierarchical + Euclidean"
+)
+cols <- c("km_fr", "km_eu", "hc_fr", "hc_eu")
+
+summary_df <- data.frame(
+  Algorithm = algorithms,
+  Accuracy  = sapply(cols, function(col) mean(results[[col]])),
+  SE        = sapply(cols, function(col) sd(results[[col]]) / sqrt(n_rep)),
+  row.names = NULL
+)
+summary_df$Replicated <- sprintf("%.3f ± %.3f", summary_df$Accuracy, summary_df$SE)
+
+zhang_ref <- c(
+  "0.937 ± 0.001",
+  "0.877 ± 0.003",
+  "0.860 ± 0.008",
+  "0.716 ± 0.012"
+)
+
+comparison <- data.frame(
+  Algorithm  = summary_df$Algorithm,
+  Replicated = summary_df$Replicated,
+  Zhang_2017 = zhang_ref
+)
+
+knitr::kable(
+  comparison,
+  col.names = c("Algorithm", "Replicated (mean ± SE)", "Zhang (2017) Table 8.3"),
+  caption   = "Clustering accuracy over 100 Monte Carlo replications (bivariate k=3)"
+)
+```
+
+---
+
+## Save results
+
+```{r save}
+write.csv(results,    "../results/tables/replication_results.csv", row.names = FALSE)
+write.csv(summary_df, "../results/tables/accuracy_summary.csv",    row.names = FALSE)
+cat("Results written to results/tables/\n")
+```
