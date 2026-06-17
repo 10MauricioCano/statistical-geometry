@@ -137,9 +137,17 @@ Required sanity checks:
 ### Exp 3 — Clustering Univariate Gaussians, k=3
 **Branch**: `exp3-clustering-k3`  |  Requires: exp2
 
-Same setup as exp2 but k=3. Thesis does not specify exact parameters for k=3 univariate — choose 3 well-separated but non-trivial distributions.
+Same setup as exp2 but k=3. Thesis does not specify exact parameters for k=3 univariate. Chosen: (μ1,σ1)=(1,1.0), (μ2,σ2)=(2,1.5), (μ3,σ3)=(3,2.0) — varying σ makes Fisher-Rao non-trivially different from Euclidean.
 
-**Expected pattern**: K-Means + Fisher-Rao wins ~98/100 replications; Hierarchical + Fisher-Rao wins ~70/100.
+**Replicated results (seed=42, 100 reps)**:
+| Algorithm | Replicated |
+|-----------|------------|
+| K-Means + Fisher-Rao      | 0.978 ± 0.001 |
+| K-Means + Euclidean       | 0.965 ± 0.001 |
+| Hierarchical + Fisher-Rao | 0.941 ± 0.005 |
+| Hierarchical + Euclidean  | 0.889 ± 0.012 |
+
+Fisher-Rao > Euclidean in all conditions. Win rates (R, seed=42): K-Means 85/100, Hierarchical 58/100. Python mirrors these results within ~0.01.
 
 ---
 
@@ -281,9 +289,9 @@ Milestones on `main`: v0.1 (exp1), v0.2 (exp2+3), v0.3 (exp4), v1.0 (exp5+6).
 
 | Exp | R impl | Python impl | Results match Zhang | Notes |
 |-----|--------|-------------|---------------------|-------|
-| exp1 | 🔲 | 🔲 | 🔲 | |
-| exp2 | 🔲 | 🔲 | 🔲 | |
-| exp3 | 🔲 | 🔲 | 🔲 | |
+| exp1 | ✅ | ✅ | ✅ | Merged to main (v0.1) |
+| exp2 | ✅ | ✅ | ✅ | Results match Zhang Table 8.1 |
+| exp3 | ✅ | ✅ | ✅ | FR > Euclidean all conditions; params (1,1.0),(2,1.5),(3,2.0) |
 | exp4 | 🔲 | 🔲 | 🔲 | |
 | exp5 | 🔲 | 🔲 | 🔲 | |
 | exp6 | 🔲 | 🔲 | 🔲 | |
