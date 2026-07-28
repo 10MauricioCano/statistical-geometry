@@ -1,0 +1,5 @@
+"Algorithm","Accuracy","SE","Replicated"
+"K-Means + Fisher-Rao",0.978466666666667,0.000817073697783393,"0.978 ± 0.001"
+"K-Means + Euclidean",0.965266666666667,0.00135767345728292,"0.965 ± 0.001"
+"Hierarchical + Fisher-Rao",0.9407,0.00511885557320668,"0.941 ± 0.005"
+"Hierarchical + Euclidean",0.8893,0.0117710381898684,"0.889 ± 0.012"

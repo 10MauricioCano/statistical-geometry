@@ -1,0 +1,106 @@
+---
+title: "Exp 3 — Clustering Univariate Gaussians, k=3"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "#>")
+set.seed(42)
+source("../../exp1_distances/R/distances.R")
+source("../R/data_generation.R")
+source("../R/clustering_k3.R")
+dir.create("../results/tables",  recursive = TRUE, showWarnings = FALSE)
+dir.create("../results/figures", recursive = TRUE, showWarnings = FALSE)
+```
+
+Extends Zhang (2017) Ch.8 to k=3 univariate Gaussian clusters. The thesis does
+not provide exact k=3 univariate parameters, so three well-separated distributions
+are chosen with varying spread to expose Fisher-Rao's advantage over Euclidean
+distance. Each algorithm is evaluated over 100 Monte Carlo replications.
+
+---
+
+## Parameters
+
+```{r params}
+mu_list    <- list(1, 2, 3)
+sigma_list <- list(1.0, 1.5, 2.0)
+k     <- 3L
+t     <- 100L   # distributions per cluster
+n     <- 30L    # samples per distribution
+n_rep <- 100L   # Monte Carlo replications
+```
+
+True cluster parameters: $(\mu_1, \sigma_1) = (1, 1.0)$,
+$(\mu_2, \sigma_2) = (2, 1.5)$, $(\mu_3, \sigma_3) = (3, 2.0)$.
+Each replication generates $k \times t = 300$ estimated parameter pairs.
+Varying $\sigma$ values make the Fisher-Rao metric non-trivially different
+from Euclidean.
+
+---
+
+## Monte Carlo replications
+
+```{r run, cache=TRUE}
+results <- run_replications(
+  mu_list, sigma_list,
+  k = k, t = t, n = n, n_rep = n_rep
+)
+```
+
+---
+
+## Accuracy table
+
+```{r summary}
+algorithms <- c(
+  "K-Means + Fisher-Rao",
+  "K-Means + Euclidean",
+  "Hierarchical + Fisher-Rao",
+  "Hierarchical + Euclidean"
+)
+cols <- c("km_fr", "km_eu", "hc_fr", "hc_eu")
+
+summary_df <- data.frame(
+  Algorithm = algorithms,
+  Accuracy  = sapply(cols, function(col) mean(results[[col]])),
+  SE        = sapply(cols, function(col) sd(results[[col]]) / sqrt(n_rep)),
+  row.names = NULL
+)
+summary_df$Replicated <- sprintf("%.3f ± %.3f", summary_df$Accuracy, summary_df$SE)
+
+knitr::kable(
+  summary_df[, c("Algorithm", "Replicated")],
+  col.names = c("Algorithm", "Accuracy (mean ± SE)"),
+  caption   = "Clustering accuracy over 100 Monte Carlo replications (k=3)"
+)
+```
+
+---
+
+## Fisher-Rao vs Euclidean: win counts
+
+```{r wins}
+km_fr_wins <- sum(results$km_fr > results$km_eu)
+hc_fr_wins <- sum(results$hc_fr > results$hc_eu)
+
+cat(sprintf("K-Means  Fisher-Rao wins: %d / %d replications\n", km_fr_wins, n_rep))
+cat(sprintf("Hierarch Fisher-Rao wins: %d / %d replications\n", hc_fr_wins, n_rep))
+```
+
+Expected pattern (Zhang Ch.8): K-Means Fisher-Rao wins ~98/100; Hierarchical
+Fisher-Rao wins ~70/100.
+
+---
+
+## Save results
+
+```{r save}
+write.csv(results,    "../results/tables/replication_results.csv", row.names = FALSE)
+write.csv(summary_df, "../results/tables/accuracy_summary.csv",    row.names = FALSE)
+cat("Results written to results/tables/\n")
+```

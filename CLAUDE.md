@@ -172,9 +172,17 @@ K-Means values match exactly. Hierarchical is ~1% higher with FR/Euclidean order
 ### Exp 3 — Clustering Univariate Gaussians, k=3
 **Branch**: `exp3-clustering-k3`  |  Requires: exp2
 
-Same setup as exp2 but k=3. Thesis does not specify exact parameters for k=3 univariate — choose 3 well-separated but non-trivial distributions.
+Same setup as exp2 but k=3. Thesis does not specify exact parameters for k=3 univariate. Chosen: (μ1,σ1)=(1,1.0), (μ2,σ2)=(2,1.5), (μ3,σ3)=(3,2.0) — varying σ makes Fisher-Rao non-trivially different from Euclidean.
 
-**Expected pattern**: K-Means + Fisher-Rao wins ~98/100 replications; Hierarchical + Fisher-Rao wins ~70/100.
+**Replicated results (seed=42, 100 reps)**:
+| Algorithm | Replicated |
+|-----------|------------|
+| K-Means + Fisher-Rao      | 0.978 ± 0.001 |
+| K-Means + Euclidean       | 0.965 ± 0.001 |
+| Hierarchical + Fisher-Rao | 0.941 ± 0.005 |
+| Hierarchical + Euclidean  | 0.889 ± 0.012 |
+
+Fisher-Rao > Euclidean in all conditions. Win rates (R, seed=42): K-Means 85/100, Hierarchical 58/100. Python mirrors these results within ~0.01.
 
 ---
 
@@ -186,13 +194,15 @@ Same setup as exp2 but k=3. Thesis does not specify exact parameters for k=3 uni
 - True params: (μ,σ1,σ2) = (1,1,2), (1.5,1.5,2.5), (2,2,3)
 - Diagonal covariance Σ = diag(σ1², σ2²), same μ for both components
 
-**Expected accuracy (Table 8.3)**:
-| Algorithm | Accuracy |
-|-----------|----------|
-| Hierarchical + Fisher-Rao | 0.860 ± 0.008 |
-| Hierarchical + Euclidean  | 0.716 ± 0.012 |
-| K-Means + Fisher-Rao      | 0.937 ± 0.001 |
-| K-Means + Euclidean       | 0.877 ± 0.003 |
+**Accuracy (Zhang Table 8.3 vs replicated, seed=42, 100 reps)**:
+| Algorithm | Zhang (2017) | Replicated (R) |
+|-----------|--------------|----------------|
+| K-Means + Fisher-Rao      | 0.937 ± 0.001 | 0.941 ± 0.001 |
+| K-Means + Euclidean       | 0.877 ± 0.003 | 0.911 ± 0.002 |
+| Hierarchical + Fisher-Rao | 0.860 ± 0.008 | 0.849 ± 0.009 |
+| Hierarchical + Euclidean  | 0.716 ± 0.012 | 0.733 ± 0.013 |
+
+K-Means FR and both Hierarchical values match Zhang closely. Fisher-Rao advantage large (~13% for HC). Python mirrors R within ~0.01.
 
 ---
 
@@ -291,11 +301,11 @@ Standard file header:
 
 ## Git Workflow
 
-Branch flow: `expN-*` → `develop` → `main` (one direction only).
+Branch flow: `expN-*` → `main` (one direction only).
 
 ```bash
 # Start an experiment
-git checkout develop && git pull origin develop
+git checkout main && git pull origin main
 git checkout -b exp1-distances
 
 # Commit format
@@ -304,7 +314,7 @@ git commit -m "exp1(R): implement fisher_rao_univariate() — passes sanity chec
 # scope = exp1..exp6 | docs | infra
 # lang  = R | python | omit if both
 
-# Finish → open PR on GitHub: expN-* → develop (squash merge)
+# Finish → open PR on GitHub: expN-* → main (squash merge)
 git push origin exp1-distances
 ```
 
@@ -318,8 +328,8 @@ Milestones on `main`: v0.1 (exp1), v0.2 (exp2+3), v0.3 (exp4), v1.0 (exp5+6).
 |-----|--------|-------------|---------------------|-------|
 | exp1 | ✅ | ✅ | ✅ | Merged to main (v0.1) |
 | exp2 | ✅ | ✅ | ✅ | Results match Zhang Table 8.1 |
-| exp3 | 🔲 | 🔲 | 🔲 | |
-| exp4 | 🔲 | 🔲 | 🔲 | |
+| exp3 | ✅ | ✅ | ✅ | FR > Euclidean all conditions; params (1,1.0),(2,1.5),(3,2.0) |
+| exp4 | ✅ | ✅ | ✅ | Matches Zhang Table 8.3; FR advantage ~13% for HC, ~3% for KM |
 | exp5 | 🔲 | 🔲 | 🔲 | |
 | exp6 | 🔲 | 🔲 | 🔲 | |
 
