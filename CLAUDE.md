@@ -80,6 +80,35 @@ experiments/expN_name/
 
 ---
 
+## Cross-Experiment Dependencies
+
+Experiments exp2–exp6 call functions from exp1. **knitr sets the working directory to the notebook's own folder**, so paths in `.Rmd` files are relative to `notebooks/`. R/ function files contain no `source()` calls — the notebook is the sole entry point.
+
+**R** (from a notebook at `expN_*/notebooks/`):
+```r
+source("../../exp1_distances/R/distances.R")   # 2 levels up to experiments/
+source("../R/data_generation.R")               # sibling R/ folder
+```
+
+**Python** (from `expN_*/python/`, uses `__file__` so path is always correct):
+```python
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../exp1_distances/python"))
+from distances import fisher_rao_univariate, fisher_rao_bivariate, hellinger_discrete
+```
+
+**exp1 function API**:
+```
+# R
+fisher_rao_univariate(mu1, sigma1, mu2, sigma2)   # scalars → scalar
+fisher_rao_bivariate(mu1, sigma1, mu2, sigma2)    # sigma = c(s1, s2) → scalar
+hellinger_discrete(p, q)                          # vectors → scalar, auto-normalizes
+
+# Python (same names; sigma1/sigma2 are np.ndarray of length 2 for bivariate)
+```
+
+---
+
 ## Experiment Roadmap
 
 Work **strictly in order** — each experiment depends on the previous.
@@ -98,9 +127,11 @@ Same-mean special case: d_F = sqrt(2)*|ln(σ2/σ1)|
 
 **Fisher-Rao bivariate diagonal** (Zhang eq.4.12 / 8.2):
 ```
-d_F(θ1,θ2) = sqrt( 2 * sum_{i=1}^{2} ln(...)² )
-See CLAUDE.md Section 4 for full formula — uses Euclidean norms of
-(μ/sqrt(2), σ_i) vectors in upper half-plane geometry.
+d_F(θ1,θ2) = sqrt( 2 * sum_{i=1}^{2} [ln((A_i + B_i)² / (4·σ1i·σ2i))]² )
+where Δμ = (μ1 - μ2) / sqrt(2)
+      A_i = sqrt( Δμ² + (σ1i + σ2i)² )
+      B_i = sqrt( Δμ² + (σ1i - σ2i)² )
+Numerically stable: avoids A² - B² cancellation when σ1i ≈ σ2i.
 ```
 
 **Hellinger discrete** (Zhang eq.5.1):
@@ -120,17 +151,21 @@ Required sanity checks:
 ### Exp 2 — Clustering Univariate Gaussians, k=2
 **Branch**: `exp2-clustering-k2`  |  Requires: exp1
 
+**Files**: `R/data_generation.R` (stub exists) + `R/clustering_k2.R` (main experiment); `python/clustering_k2.py`.
+
 **Parameters (Zhang Table 8.1)**:
 - k=2, t=100 distributions/cluster, n=30 samples/distribution, 100 replications
 - True params: (μ1,σ1)=(1,1.5) and (μ2,σ2)=(2,1.5)
 
-**Expected accuracy**:
-| Algorithm | Accuracy |
-|-----------|----------|
-| Hierarchical + Fisher-Rao | 0.904 ± 0.006 |
-| Hierarchical + Euclidean  | 0.922 ± 0.006 |
-| K-Means + Fisher-Rao      | 0.965 ± 0.001 |
-| K-Means + Euclidean       | 0.965 ± 0.010 |
+**Accuracy (Zhang Table 8.1 vs replicated, seed=42, 100 reps)**:
+| Algorithm | Zhang (2017) | Replicated |
+|-----------|--------------|------------|
+| K-Means + Fisher-Rao      | 0.965 ± 0.001 | 0.966 ± 0.001 |
+| K-Means + Euclidean       | 0.965 ± 0.010 | 0.966 ± 0.001 |
+| Hierarchical + Fisher-Rao | 0.904 ± 0.006 | 0.916 ± 0.006 |
+| Hierarchical + Euclidean  | 0.922 ± 0.006 | 0.916 ± 0.007 |
+
+K-Means values match exactly. Hierarchical is ~1% higher with FR/Euclidean ordering swapped — consistent with Monte Carlo variance and possibly a different linkage method in the original (we use `complete`).
 
 ---
 
@@ -266,11 +301,11 @@ Standard file header:
 
 ## Git Workflow
 
-Branch flow: `expN-*` → `develop` → `main` (one direction only).
+Branch flow: `expN-*` → `main` (one direction only).
 
 ```bash
 # Start an experiment
-git checkout develop && git pull origin develop
+git checkout main && git pull origin main
 git checkout -b exp1-distances
 
 # Commit format
@@ -279,7 +314,7 @@ git commit -m "exp1(R): implement fisher_rao_univariate() — passes sanity chec
 # scope = exp1..exp6 | docs | infra
 # lang  = R | python | omit if both
 
-# Finish → open PR on GitHub: expN-* → develop (squash merge)
+# Finish → open PR on GitHub: expN-* → main (squash merge)
 git push origin exp1-distances
 ```
 

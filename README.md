@@ -1,86 +1,128 @@
 # Statistical Geometry — Machine Learning on Statistical Manifolds
 
-Exploración práctica de geometría de la información y sus aplicaciones en machine learning,
-siguiendo los tres artículos fundacionales del proyecto:
+Two intertwined objectives:
 
-| # | Referencia | Tema central |
-|---|-----------|--------------|
-| 1 | Costa, Santos, Strapasson (2015) | Distancia de Fisher y geometría hiperbólica |
-| 2 | Zhang, Bo (2017) | Clustering y clasificación en variedades estadísticas |
-| 3 | Fraiman, Moreno, Ransford (2023) | Teorema de Cramér-Wold para distribuciones elípticas |
+1. **Replicate Zhang (2017)** — implement the information-geometry clustering experiments, replacing Euclidean distance with Fisher-Rao and Hellinger distances when working with probability distributions.
+2. **Build a production ML system** — apply the full ML lifecycle framework from Chip Huyen (2022): data engineering, feature engineering, model development, deployment, monitoring, and MLOps infrastructure.
+
+The geometric distances from Zhang provide the algorithmic core. Huyen's framework guides how that core is packaged into a reliable, scalable, and maintainable production system.
 
 ---
 
-## Estructura del repositorio
+## Background
+
+Standard clustering algorithms use Euclidean distance, which treats distributions as points in parameter space and ignores their shape. Fisher-Rao and Hellinger distances are *intrinsic* to the distribution family: they measure how hard it is to statistically distinguish two distributions, not how far apart their parameters are numerically. The thesis shows this distinction matters — often substantially — in clustering accuracy.
+
+Grounded in three primary papers:
+
+| # | Reference | Topic |
+|---|---|---|
+| 1 | Costa, Santos, Strapasson (2015) | Fisher information distance and hyperbolic geometry |
+| 2 | Zhang (2017) | Clustering and classification on statistical manifolds |
+| 3 | Fraiman, Moreno, Ransford (2023) | Cramér-Wold theorem for elliptical distributions |
+
+---
+
+## Experiment Roadmap
+
+Work proceeds strictly in order — each experiment builds on the previous.
+
+| Experiment | Description | Status |
+|---|---|---|
+| exp1 | Fisher-Rao and Hellinger distance functions — implementation and sanity checks | Pending |
+| exp2 | Univariate Gaussian clustering k=2: Fisher-Rao vs. Euclidean | Pending |
+| exp3 | Univariate Gaussian clustering k=3: Fisher-Rao vs. Euclidean | Pending |
+| exp4 | Bivariate Gaussian clustering k=3: 3D parameter space | Pending |
+| exp5 | Poisson clustering with Hellinger distance + MDS | Pending |
+| exp6 | k-means convergence with Hellinger: monotonicity and local optimality | Pending |
+
+Each experiment reports mean accuracy ± SE across 100 replications, reproducing Zhang's tables before producing any visualization.
+
+---
+
+## Repository Structure
 
 ```
 statistical-geometry/
-│
 ├── experiments/
-│   ├── exp1_distances/          # Cálculo y verificación de distancias estadísticas
-│   ├── exp2_clustering_univariate_k2/   # Clustering gaussianas univariadas, k=2
-│   ├── exp3_clustering_univariate_k3/   # Clustering gaussianas univariadas, k=3
-│   ├── exp4_clustering_bivariate/       # Clustering gaussianas bivariadas, k=3
-│   ├── exp5_poisson_hellinger/          # Clustering Poisson con distancia Hellinger
-│   └── exp6_convergence/               # Convergencia y optimalidad de k-means
-│
+│   ├── exp1_distances/
+│   ├── exp2_clustering_univariate_k2/
+│   ├── exp3_clustering_univariate_k3/
+│   ├── exp4_clustering_bivariate/
+│   ├── exp5_poisson_hellinger/
+│   └── exp6_convergence/
 ├── notes/
-│   ├── theory/      # Apuntes conceptuales y matemáticos
-│   ├── readings/    # Notas por artículo
-│   └── scratch/     # Ideas y borradores
-│
-├── references/      # PDFs de los artículos fuente
+│   ├── theory/       # Mathematical and conceptual notes
+│   ├── readings/     # Notes per paper
+│   └── scratch/      # Working drafts
+├── references/       # Source paper PDFs
 └── .github/
-    └── workflows/   # CI (lint R y Python)
+    └── workflows/    # CI: R and Python linting
 ```
 
-Cada experimento tiene la misma estructura interna:
+Each experiment follows the same internal layout:
 
 ```
-expN_nombre/
-├── R/           # Implementación en R
-├── python/      # Implementación en Python
-├── notebooks/   # Jupyter / R Markdown exploratorios
-└── results/     # Figuras y tablas generadas
+expN_name/
+├── README.md      # Objective, parameters, expected results
+├── R/             # R implementation — pure functions, no side effects at top level
+├── python/        # Python implementation — mirrors R function signatures
+├── notebooks/     # Jupyter / R Markdown exploratory notebooks
+└── results/
+    ├── figures/
+    └── tables/
 ```
 
 ---
 
-## Hoja de ruta de experimentos
-
-| Experimento | Descripción | Estado |
-|-------------|-------------|--------|
-| exp1 | Calcular distancias Fisher-Rao y Hellinger, verificar sanidad | 🔲 Pendiente |
-| exp2 | Clustering univariado k=2: Fisher-Rao vs Euclidiana | 🔲 Pendiente |
-| exp3 | Clustering univariado k=3: Fisher-Rao vs Euclidiana | 🔲 Pendiente |
-| exp4 | Clustering bivariado k=3: espacio de parámetros 3D | 🔲 Pendiente |
-| exp5 | Clustering Poisson con Hellinger + MDS | 🔲 Pendiente |
-| exp6 | Convergencia k-means con Hellinger: optimalidad local | 🔲 Pendiente |
-
----
-
-## Requisitos
-
-### R
-```r
-install.packages(c("ggplot2", "cluster", "MASS", "fields"))
-```
+## Setup
 
 ### Python
+
 ```bash
+python -m venv .venv
+source .venv/Scripts/activate    # Git Bash on Windows
 pip install numpy scipy matplotlib scikit-learn geomstats jupyter
 ```
 
----
+### R
 
-## Referencias
-
-- Costa, S.I.R., Santos, S.A., Strapasson, J.E. (2015). *Fisher information distance: A geometrical reading*. Discrete Applied Mathematics, 197, 59–69.
-- Zhang, B. (2017). *Machine Learning on Statistical Manifold*. Harvey Mudd College Senior Thesis.
-- Fraiman, R., Moreno, L., Ransford, T. (2023). *A Cramér–Wold theorem for elliptical distributions*. Journal of Multivariate Analysis, 196, 105176.
+```r
+install.packages(c("ggplot2", "cluster", "MASS", "rmarkdown"))
+```
 
 ---
 
-## Licencia
+## Stack
 
-MIT — ver [LICENSE](LICENSE)
+`Python` · `R` · `NumPy` · `SciPy` · `geomstats` · `scikit-learn` · `ggplot2` · `GitHub Actions`
+
+---
+
+## Git Workflow
+
+Branch flow: `expN-*` → `develop` → `main`.
+
+```bash
+git checkout -b exp1-distances
+# ... implement, test, verify against Zhang's tables
+git push origin exp1-distances
+# open PR: exp1-distances → develop
+```
+
+Milestones on `main`: v0.1 (exp1) → v0.2 (exp2+3) → v0.3 (exp4) → v1.0 (exp5+6).
+
+---
+
+## References
+
+- Costa, S.I.R., Santos, S.A., Strapasson, J.E. (2015). *Fisher information distance: A geometrical reading.* Discrete Applied Mathematics, 197, 59–69.
+- Zhang, B. (2017). *Machine Learning on Statistical Manifold.* Harvey Mudd College Senior Thesis.
+- Fraiman, R., Moreno, L., Ransford, T. (2023). *A Cramér-Wold theorem for elliptical distributions.* Journal of Multivariate Analysis, 196, 105176.
+- Huyen, C. (2022). *Designing Machine Learning Systems.* O'Reilly Media. ([companion repo](https://github.com/10MauricioCano/dmls-book))
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)

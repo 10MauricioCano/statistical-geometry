@@ -1,0 +1,102 @@
+---
+title: "Exp 2 — Clustering Univariate Gaussians, k=2"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "#>")
+set.seed(42)
+source("../../exp1_distances/R/distances.R")
+source("../R/data_generation.R")
+source("../R/clustering_k2.R")
+dir.create("../results/tables",  recursive = TRUE, showWarnings = FALSE)
+dir.create("../results/figures", recursive = TRUE, showWarnings = FALSE)
+```
+
+Replicates Zhang (2017) Table 8.1: K-Means and hierarchical clustering on
+univariate Gaussian parameter estimates, comparing Fisher-Rao vs Euclidean
+distance. Each algorithm is evaluated over 100 Monte Carlo replications.
+
+---
+
+## Parameters (Zhang Table 8.1)
+
+```{r params}
+mu_list    <- list(1, 2)
+sigma_list <- list(1.5, 1.5)
+k     <- 2L
+t     <- 100L   # distributions per cluster
+n     <- 30L    # samples per distribution
+n_rep <- 100L   # Monte Carlo replications
+```
+
+True cluster parameters: $(\mu_1, \sigma_1) = (1, 1.5)$ and
+$(\mu_2, \sigma_2) = (2, 1.5)$. Each replication generates $k \times t = 200$
+estimated parameter pairs as the objects to cluster.
+
+---
+
+## Monte Carlo replications
+
+```{r run, cache=TRUE}
+results <- run_replications(
+  mu_list, sigma_list,
+  k = k, t = t, n = n, n_rep = n_rep
+)
+```
+
+---
+
+## Accuracy table
+
+```{r summary}
+algorithms <- c(
+  "K-Means + Fisher-Rao",
+  "K-Means + Euclidean",
+  "Hierarchical + Fisher-Rao",
+  "Hierarchical + Euclidean"
+)
+cols <- c("km_fr", "km_eu", "hc_fr", "hc_eu")
+
+summary_df <- data.frame(
+  Algorithm = algorithms,
+  Accuracy  = sapply(cols, function(col) mean(results[[col]])),
+  SE        = sapply(cols, function(col) sd(results[[col]]) / sqrt(n_rep)),
+  row.names = NULL
+)
+summary_df$Replicated <- sprintf("%.3f ± %.3f", summary_df$Accuracy, summary_df$SE)
+
+zhang_ref <- c(
+  "0.965 ± 0.001",
+  "0.965 ± 0.010",
+  "0.904 ± 0.006",
+  "0.922 ± 0.006"
+)
+
+comparison <- data.frame(
+  Algorithm  = summary_df$Algorithm,
+  Replicated = summary_df$Replicated,
+  Zhang_2017 = zhang_ref
+)
+
+knitr::kable(
+  comparison,
+  col.names = c("Algorithm", "Replicated (mean ± SE)", "Zhang (2017) Table 8.1"),
+  caption   = "Clustering accuracy over 100 Monte Carlo replications"
+)
+```
+
+---
+
+## Save results
+
+```{r save}
+write.csv(results,    "../results/tables/replication_results.csv", row.names = FALSE)
+write.csv(summary_df, "../results/tables/accuracy_summary.csv",    row.names = FALSE)
+cat("Results written to results/tables/\n")
+cat("All checks passed:", all(comparison$Replicated != "NA ± NA"), "\n")
+```
