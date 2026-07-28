@@ -1,0 +1,19 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Rendered notebook outputs (regenerate via rmarkdown::render())
+experiments/**/notebooks/*.html
+experiments/**/notebooks/*_cache/
+
+# Claude Code local machine settings
+.claude/settings.local.json
+
+# Copyrighted reference papers — keep local only, do not redistribute
+notes/theory/*.pdf

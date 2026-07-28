@@ -52,9 +52,15 @@ python -m venv .venv
 source .venv/Scripts/activate          # Git Bash on Windows
 pip install numpy scipy matplotlib scikit-learn jupyter
 
-# Run a script
-python experiments/exp1_distances/python/distances.py
+# Run distance sanity checks (module has no __main__, import and call directly)
+python -c "from experiments.exp1_distances.python.distances import fisher_rao_univariate as f; print(f(0,1,0,2))"
+
+# Run a clustering experiment driver (prints replicated accuracy table, ~seconds)
+python experiments/exp3_clustering_univariate_k3/python/clustering_k3.py
+python experiments/exp4_clustering_bivariate/python/clustering_bivariate.py
 ```
+
+There is no test runner, CI config, `.lintr`, or `requirements.txt` in the repo yet. "Tests" are the sanity checks embedded in each experiment's notebook plus the `if __name__ == "__main__"` driver in each `python/*.py` clustering script (which prints a replicated-vs-Zhang accuracy table instead of asserting). R `*.R` files have no equivalent driver — they're function-defs only per the coding standard below; run them via a notebook or `Rscript -e "source(...); <call>"`.
 
 ### Shell note
 Use **Git Bash** syntax for all shell commands. Do NOT use WSL or PowerShell syntax. The user is on Windows 11.
@@ -106,6 +112,24 @@ hellinger_discrete(p, q)                          # vectors → scalar, auto-nor
 
 # Python (same names; sigma1/sigma2 are np.ndarray of length 2 for bivariate)
 ```
+
+---
+
+## Architecture
+
+Every experiment past exp1 builds on the same three-layer pipeline, duplicated in parallel `R/` and `python/` files with matching function names:
+
+1. **Data generation** (`data_generation*.{R,py}`) — draws `n` samples per distribution from the true generating distribution, reduces each sample to an estimated parameter tuple (e.g. `(mu_hat, sigma_hat)`), and repeats `t` times per cluster. Output is the object-to-cluster: `k*t` estimated parameter points plus their ground-truth cluster label (Zhang Ch.7 pipeline).
+2. **Distance matrices** (`fisher_rao_dist_matrix`, `euclidean_dist_matrix`, …) — pairwise distance over the estimated-parameter points, computed once for hierarchical clustering. K-Means recomputes distances to centroids each iteration instead of using the full matrix.
+3. **Clustering + scoring** (`kmeans_fr`, `hclust_custom`, `match_accuracy_k3`, `run_replications`) — runs K-Means (custom Fisher-Rao/Hellinger variant, best-of-`n_init` restarts) and `scipy`/R `hclust`-based hierarchical clustering, scores against ground truth via best-of-`k!` label-permutation accuracy (`match_accuracy_k3` — only tractable because k ≤ 3), then loops the whole pipeline `n_rep` times (default 100) for mean ± SE.
+
+Conventions to preserve when extending this pattern (e.g. for exp5/exp6):
+
+- **Cluster labels are 1-indexed** in both languages (`cluster_arr = j + 1` in Python, matching R's native 1-indexing) — a deliberate cross-language convention, not an oversight.
+- **Python passes parameter sets as `dict[str, np.ndarray]`** (e.g. `{"mu_hat": ..., "sigma_hat": ...}`); **R passes the equivalent as a `data.frame`** with the same column names. Function signatures mirror each other but are not literally identical in shape.
+- **Centroid updates use the arithmetic mean of estimated parameters**, not a true Fréchet mean — valid for well-separated clusters (Zhang Ch.7/8; Selim & Ismail 1984). Exp6's closed-form Hellinger centroid (eq. 10.12) is the one place an exact centroid formula is required instead.
+- **Cross-experiment imports use a `sys.path.insert` hack**, not a package/module install — e.g. exp3/exp4 python files insert `../../exp1_distances/python` onto `sys.path` to import `distances.py`. Follow this same relative-path pattern rather than introducing a package structure, unless asked to refactor it.
+- Bivariate distance code (exp4) inlines and vectorizes the pairwise Fisher-Rao formula (`_fr_bivariate_pair_arrays`) rather than calling `fisher_rao_bivariate` in a loop, for performance over `k*t` points — follow this vectorized-over-numpy-arrays style for any new bivariate/multivariate distance work rather than the naive nested-loop form used in exp1's reference implementation.
 
 ---
 
