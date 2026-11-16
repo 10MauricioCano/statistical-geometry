@@ -29,10 +29,10 @@ Work proceeds strictly in order — each experiment builds on the previous.
 
 | Experiment | Description | Status |
 |---|---|---|
-| exp1 | Fisher-Rao and Hellinger distance functions — implementation and sanity checks | Pending |
-| exp2 | Univariate Gaussian clustering k=2: Fisher-Rao vs. Euclidean | Pending |
-| exp3 | Univariate Gaussian clustering k=3: Fisher-Rao vs. Euclidean | Pending |
-| exp4 | Bivariate Gaussian clustering k=3: 3D parameter space | Pending |
+| exp1 | Fisher-Rao and Hellinger distance functions — implementation and sanity checks | Done |
+| exp2 | Univariate Gaussian clustering k=2: Fisher-Rao vs. Euclidean | Done — matches Zhang Table 8.1 |
+| exp3 | Univariate Gaussian clustering k=3: Fisher-Rao vs. Euclidean | In revision — re-run with Zhang Table 8.2 parameters |
+| exp4 | Bivariate Gaussian clustering k=3: 3D parameter space | Done — matches Zhang Table 8.3 |
 | exp5 | Poisson clustering with Hellinger distance + MDS | Pending |
 | exp6 | k-means convergence with Hellinger: monotonicity and local optimality | Pending |
 
@@ -53,11 +53,8 @@ statistical-geometry/
 │   └── exp6_convergence/
 ├── notes/
 │   ├── theory/       # Mathematical and conceptual notes
-│   ├── readings/     # Notes per paper
-│   └── scratch/      # Working drafts
-├── references/       # Source paper PDFs
-└── .github/
-    └── workflows/    # CI: R and Python linting
+│   └── readings/     # Notes per paper
+└── references/       # Source papers (PDFs are git-ignored)
 ```
 
 Each experiment follows the same internal layout:
@@ -82,7 +79,7 @@ expN_name/
 ```bash
 python -m venv .venv
 source .venv/Scripts/activate    # Git Bash on Windows
-pip install numpy scipy matplotlib scikit-learn geomstats jupyter
+pip install numpy scipy matplotlib scikit-learn jupyter
 ```
 
 ### R
@@ -95,20 +92,23 @@ install.packages(c("ggplot2", "cluster", "MASS", "rmarkdown"))
 
 ## Stack
 
-`Python` · `R` · `NumPy` · `SciPy` · `geomstats` · `scikit-learn` · `ggplot2` · `GitHub Actions`
+`Python` · `R` · `NumPy` · `SciPy` · `scikit-learn` · `ggplot2`
 
 ---
 
 ## Git Workflow
 
-Branch flow: `expN-*` → `develop` → `main`.
+Branch flow: `expN-*` → `main` (one direction only, squash merge).
 
 ```bash
+git checkout main && git pull origin main
 git checkout -b exp1-distances
 # ... implement, test, verify against Zhang's tables
 git push origin exp1-distances
-# open PR: exp1-distances → develop
+# open PR: exp1-distances → main
 ```
+
+Full conventions (commit format, coding standards, progress tracker) live in [CLAUDE.md](CLAUDE.md).
 
 Milestones on `main`: v0.1 (exp1) → v0.2 (exp2+3) → v0.3 (exp4) → v1.0 (exp5+6).
 
