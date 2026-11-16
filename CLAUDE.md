@@ -35,7 +35,7 @@ The forked reference repo lives at `github.com/10MauricioCano/dmls-book` (upstre
 Rscript -e "source('experiments/exp1_distances/R/distances.R')"
 
 # Run an experiment notebook
-Rscript -e "rmarkdown::render('experiments/exp1_distances/notebooks/exp1.Rmd')"
+Rscript -e "rmarkdown::render('experiments/exp1_distances/notebooks/exp1_sanity_checks.Rmd')"
 
 # Install required packages (run once)
 Rscript -e "install.packages(c('ggplot2', 'cluster', 'MASS', 'rmarkdown'))"
@@ -276,7 +276,7 @@ Ground truth      = which cluster each point came from
 
 **Accuracy** = 1 − misclassified/total. Report mean ± SE across 100 replications.
 
-**Centroid note**: For Fisher-Rao, the centroid is the Fréchet mean (iterative geodesic average), NOT the arithmetic mean of parameters. For Hellinger, a closed form exists (eq.10.12).
+**Centroid note**: Following Zhang (eq. 6.5), the Fisher-Rao k-means centroid is the arithmetic mean of the estimated parameters, NOT the Fréchet mean (iterative geodesic average); see the Architecture conventions above. For Hellinger, a closed form exists (eq.10.12).
 
 ---
 
